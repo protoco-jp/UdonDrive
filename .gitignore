@@ -82,3 +82,16 @@ API
 Training
 Blog
 About
+
+# VRC things
+/Assets/SerializedUdonPrograms*
+/Assets/Udon/
+/Assets/Udon.meta
+/Assets/VRChat Examples/
+/Assets/VRChat Examples.meta
+/Assets/VRCSDK/
+/Assets/VRCSDK.meta
+/Assets/VRCSDK/SDK3/Runtime/
+/Packages/com.vrchat.vrcsdk3/
+
+# UdonSharp things
