@@ -95,3 +95,7 @@ About
 /Packages/com.vrchat.vrcsdk3/
 
 # UdonSharp things
+/Assets/Gizmos/UdonSharp/
+/Assets/Gizmos/UdonSharp.meta
+/Assets/UdonSharp/
+/Assets/UdonSharp.meta
