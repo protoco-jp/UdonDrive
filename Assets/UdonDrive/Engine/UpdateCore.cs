@@ -52,9 +52,9 @@ namespace UdonDrive {
         private Vector3 oldPos = Vector3.zero;
 
         void Update() {
-            //leftValue = Input.GetAxis("Oculus_CrossPlatform_PrimaryIndexTrigger");
-            //rightValue = Input.GetAxis("Oculus_CrossPlatform_SecondaryIndexTrigger");
             if (isDriver) {
+                leftValue = Input.GetAxis("Oculus_CrossPlatform_PrimaryIndexTrigger");
+                rightValue = Input.GetAxis("Oculus_CrossPlatform_SecondaryIndexTrigger");
                 followBody4Driver();
                 checkGripHold();
                 setSteeringAngle();
@@ -133,10 +133,10 @@ namespace UdonDrive {
             steeringAngle = (leftAngle + rightAngle) / 2;
             steeringWheel.localRotation = Quaternion.Euler(
                 steeringWheel.localRotation.eulerAngles.x,
-                steeringWheel.localRotation.eulerAngles.y + steeringAngle,
+                wheelAngle + steeringAngle,
                 steeringWheel.localRotation.eulerAngles.z
             );
-            wheelAngle = steeringAngle * steeringAmp;
+            wheelAngle = steeringAngle;
         }
         private void driveAllVisualWheel() {
             foreach (WheelCollider wheel in drivenWheel) {
@@ -180,8 +180,9 @@ namespace UdonDrive {
             );
         }
         private void angleWheel() {
+            float angleW = wheelAngle * steeringAmp;
             foreach (WheelCollider wheel in drivenWheel) {
-                wheel.steerAngle = wheelAngle;
+                wheel.steerAngle = angleW;
             }
         }
         private void driveWheel() {

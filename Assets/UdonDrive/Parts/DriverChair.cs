@@ -10,6 +10,10 @@ namespace UdonDrive {
         [SerializeField] UpdateCore updateCore;
         [SerializeField] GameObject physicalBody;
         [SerializeField] GameObject networkEngine;
+
+        public override void Interact(){
+            Networking.LocalPlayer.UseAttachedStation();
+        }
         public override void OnStationEntered(VRCPlayerApi player) {
             if (Networking.LocalPlayer.playerId != player.playerId) {
                 return;
