@@ -16,6 +16,10 @@ namespace UdonDrive {
         [Range(1, 10)][SerializeField] float networkBodySpeedSlope = 6;
         [SerializeField] WheelCollider[] drivenWheel;
         [SerializeField] WheelCollider[] drivingWheel;
+        [SerializeField] Transform[] drivenShaft;
+        [SerializeField] Transform[] drivingShaft;
+        [SerializeField] Transform[] visualDrivenWheel;
+        [SerializeField] Transform[] visualDrivingWheel;
 
         [SerializeField] float velocityAmp = 0.01f;
         [SerializeField] Transform velocityOffset;
@@ -30,7 +34,9 @@ namespace UdonDrive {
         [SerializeField] Transform physicsTransform;
         [SerializeField] Transform followerTransform;
 
-        private bool isDriver = false;
+        [SerializeField] Transform networkEngine; //x:speed,y:angle,z:
+
+        private bool isDriver = true;
         public void setDriver(bool _isDriver) {
             isDriver = _isDriver;
         }
@@ -47,22 +53,23 @@ namespace UdonDrive {
 
         private float leftValue = 0f;
         private float rightValue = 0f;
-        private float steeringAngle = 0f;
         private float wheelAngle = 0f;
+        private Vector3 velocity = Vector3.zero;
         private Vector3 oldPos = Vector3.zero;
 
         void Update() {
             if (isDriver) {
-                leftValue = Input.GetAxis("Oculus_CrossPlatform_PrimaryIndexTrigger");
-                rightValue = Input.GetAxis("Oculus_CrossPlatform_SecondaryIndexTrigger");
+                //leftValue = Input.GetAxis("Oculus_CrossPlatform_PrimaryIndexTrigger");
+                //rightValue = Input.GetAxis("Oculus_CrossPlatform_SecondaryIndexTrigger");
                 followBody4Driver();
-                checkGripHold();
                 setSteeringAngle();
-                driveAllVisualWheel();
+                driveVisualWheel();
+                setNetworkValue();
             } else {
                 followBody4Passenger();
-                checkGripHold();
+                driveNetworkVisualWheel();
             }
+            checkGripHold();
         }
 
         void FixedUpdate() {
@@ -86,17 +93,17 @@ namespace UdonDrive {
         }
         private void setSteeringAngle() {
             if (!(holdLeft || holdRight)) {
-                steeringAngle = Mathf.Lerp(steeringAngle, 0f, steeringRewindSpeed * Time.deltaTime);
+                leftValue = 1; //brake
+                wheelAngle = Mathf.Lerp(wheelAngle, 0f, steeringRewindSpeed * Time.deltaTime);
                 steeringWheel.localRotation = Quaternion.Euler(
                     steeringWheel.localRotation.eulerAngles.x,
-                    steeringAngle,
+                    wheelAngle,
                     steeringWheel.localRotation.eulerAngles.z
                 );
-                wheelAngle = steeringAngle * steeringAmp;
                 return;
             }
 
-            Vector3 velocity = (velocityOffset.position - oldPos) / Time.deltaTime;
+            velocity = (velocityOffset.position - oldPos) / Time.deltaTime;
             velocity *= velocityAmp;
             oldPos = velocityOffset.position;
             if (holdLeft) {
@@ -130,34 +137,43 @@ namespace UdonDrive {
                 new Vector2(gripLocalRight.localPosition.x, gripLocalRight.localPosition.z),
                 new Vector2(gripDefaultRight.localPosition.x, gripDefaultRight.localPosition.z)
             );
-            steeringAngle = (leftAngle + rightAngle) / 2;
+            float steeringAngle = (leftAngle + rightAngle) / 2;
             steeringWheel.localRotation = Quaternion.Euler(
                 steeringWheel.localRotation.eulerAngles.x,
                 wheelAngle + steeringAngle,
                 steeringWheel.localRotation.eulerAngles.z
             );
-            wheelAngle = steeringAngle;
+            wheelAngle = wheelAngle + steeringAngle;
         }
-        private void driveAllVisualWheel() {
-            foreach (WheelCollider wheel in drivenWheel) {
-                driveVisualWheel(wheel);
-            }
-            foreach (WheelCollider wheel in drivingWheel) {
-                driveVisualWheel(wheel);
-            }
-        }
-        private void driveVisualWheel(WheelCollider wheel) {
-            Transform visualWheel = wheel.transform.GetChild(0);
+        private void driveVisualWheel() {
             Vector3 pos;
             Quaternion rot;
-            wheel.GetWorldPose(out pos, out rot);
-            visualWheel.transform.position = pos;
-            visualWheel.transform.rotation = rot;
+            for (int i = 0; i < drivenWheel.Length; i++) {
+                drivenWheel[i].GetWorldPose(out pos, out rot);
+                visualDrivenWheel[i].localRotation = Quaternion.Inverse(drivenShaft[i].rotation) * rot;
+                visualDrivenWheel[i].localPosition = pos - drivenShaft[i].position;
+            }
+            for (int i = 0; i < drivingWheel.Length; i++) {
+                drivingWheel[i].GetWorldPose(out pos, out rot);
+                visualDrivingWheel[i].localRotation = Quaternion.Inverse(drivingShaft[i].rotation) * rot;
+                visualDrivingWheel[i].localPosition = pos - drivingShaft[i].position;
+            }
         }
+        private void driveNetworkVisualWheel() {
+
+        }
+
         private void followBody4Driver() {
             followerTransform.SetPositionAndRotation(
                 physicsTransform.position,
                 physicsTransform.rotation
+            );
+        }
+        private void setNetworkValue() {
+            networkEngine.position = new Vector3(
+                velocity.magnitude,
+                wheelAngle * steeringAmp,
+                0
             );
         }
 
@@ -180,12 +196,14 @@ namespace UdonDrive {
             );
         }
         private void angleWheel() {
+            wheelAngle = 30;
             float angleW = wheelAngle * steeringAmp;
             foreach (WheelCollider wheel in drivenWheel) {
                 wheel.steerAngle = angleW;
             }
         }
         private void driveWheel() {
+            rightValue = 1;
             float brakeTorque = leftValue * brakeAmp;
             float inputTorque = rightValue * torqueAmp;
 
