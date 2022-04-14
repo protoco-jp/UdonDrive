@@ -68,8 +68,8 @@ namespace UdonDrive {
             velocity = (velocityOffset.position - oldPos) / Time.deltaTime;
             oldPos = velocityOffset.position;
             if (isDriver) {
-                //leftValue = Input.GetAxis("Oculus_CrossPlatform_PrimaryIndexTrigger");
-                //rightValue = Input.GetAxis("Oculus_CrossPlatform_SecondaryIndexTrigger");
+                leftValue = Input.GetAxis("Oculus_CrossPlatform_PrimaryIndexTrigger");
+                rightValue = Input.GetAxis("Oculus_CrossPlatform_SecondaryIndexTrigger");
                 followBody4Driver();
                 setSteeringAngle();
                 driveVisualWheel();
