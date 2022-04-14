@@ -11,13 +11,18 @@ namespace UdonDrive {
         [SerializeField] float torqueAmp = 700f;
         [SerializeField] float brakeAmp = 1000f;
         [SerializeField] float steeringAmp = 0.3f;
-        [Range(0, 1)][SerializeField] float steeringRewindSpeed = 0.02f;
+        [Range(1, 720)][SerializeField] float steeringRewindSpeed = 180f;
         [Range(0, 1)][SerializeField] float footBrakeRatio = 0.8f;
         [Range(1, 10)][SerializeField] float networkBodySpeedSlope = 6;
-        [SerializeField] WheelCollider[] drivenWheel;
-        [SerializeField] WheelCollider[] drivingWheel;
+        [Range(1f, 5)][SerializeField] float networkWheelRotationAmp = 1f;
+
         [SerializeField] Transform[] drivenShaft;
         [SerializeField] Transform[] drivingShaft;
+        [SerializeField] WheelCollider[] drivenWheel;
+        [SerializeField] WheelCollider[] drivingWheel;
+
+        [SerializeField] Transform[] visualDrivenShaft;
+        [SerializeField] Transform[] visualDrivingShaft;
         [SerializeField] Transform[] visualDrivenWheel;
         [SerializeField] Transform[] visualDrivingWheel;
 
@@ -34,9 +39,11 @@ namespace UdonDrive {
         [SerializeField] Transform physicsTransform;
         [SerializeField] Transform followerTransform;
 
-        [SerializeField] Transform networkEngine; //x:speed,y:angle,z:
+        [SerializeField] Transform networkEngine; //x:speed,y:steering,z:
+        [SerializeField] Transform networkWheel1; //x:speed,y:steering,z:
+        [SerializeField] Transform networkWheel2; //x:speed,y:steering,z:
 
-        private bool isDriver = true;
+        private bool isDriver = false;
         public void setDriver(bool _isDriver) {
             isDriver = _isDriver;
         }
@@ -58,6 +65,8 @@ namespace UdonDrive {
         private Vector3 oldPos = Vector3.zero;
 
         void Update() {
+            velocity = (velocityOffset.position - oldPos) / Time.deltaTime;
+            oldPos = velocityOffset.position;
             if (isDriver) {
                 //leftValue = Input.GetAxis("Oculus_CrossPlatform_PrimaryIndexTrigger");
                 //rightValue = Input.GetAxis("Oculus_CrossPlatform_SecondaryIndexTrigger");
@@ -67,7 +76,7 @@ namespace UdonDrive {
                 setNetworkValue();
             } else {
                 followBody4Passenger();
-                driveNetworkVisualWheel();
+                getNetworkValue();
             }
             checkGripHold();
         }
@@ -92,23 +101,21 @@ namespace UdonDrive {
             }
         }
         private void setSteeringAngle() {
+            steeringWheel.localRotation = Quaternion.Euler(
+                0f,
+                wheelAngle,
+                0f
+            );
+
             if (!(holdLeft || holdRight)) {
                 leftValue = 1; //brake
-                wheelAngle = Mathf.Lerp(wheelAngle, 0f, steeringRewindSpeed * Time.deltaTime);
-                steeringWheel.localRotation = Quaternion.Euler(
-                    steeringWheel.localRotation.eulerAngles.x,
-                    wheelAngle,
-                    steeringWheel.localRotation.eulerAngles.z
-                );
+                wheelAngle = Mathf.MoveTowards(wheelAngle, 0f, steeringRewindSpeed * Time.deltaTime);
                 return;
             }
 
-            velocity = (velocityOffset.position - oldPos) / Time.deltaTime;
-            velocity *= velocityAmp;
-            oldPos = velocityOffset.position;
             if (holdLeft) {
                 gripLocalLeft.SetPositionAndRotation(
-                    Networking.LocalPlayer.GetBonePosition(HumanBodyBones.LeftHand) + velocity,
+                    Networking.LocalPlayer.GetBonePosition(HumanBodyBones.LeftHand) + velocity * velocityAmp,
                     gripLeft.rotation
                 );
             } else {
@@ -119,7 +126,7 @@ namespace UdonDrive {
             }
             if (holdRight) {
                 gripLocalRight.SetPositionAndRotation(
-                    Networking.LocalPlayer.GetBonePosition(HumanBodyBones.RightHand) + velocity,
+                    Networking.LocalPlayer.GetBonePosition(HumanBodyBones.RightHand) + velocity * velocityAmp,
                     gripRight.rotation
                 );
             } else {
@@ -138,42 +145,82 @@ namespace UdonDrive {
                 new Vector2(gripDefaultRight.localPosition.x, gripDefaultRight.localPosition.z)
             );
             float steeringAngle = (leftAngle + rightAngle) / 2;
-            steeringWheel.localRotation = Quaternion.Euler(
-                steeringWheel.localRotation.eulerAngles.x,
-                wheelAngle + steeringAngle,
-                steeringWheel.localRotation.eulerAngles.z
-            );
+            Debug.Log(steeringAngle);
             wheelAngle = wheelAngle + steeringAngle;
         }
         private void driveVisualWheel() {
             Vector3 pos;
             Quaternion rot;
+
             for (int i = 0; i < drivenWheel.Length; i++) {
+                visualDrivenShaft[i].localPosition = Vector3.zero;
+                visualDrivenShaft[i].localRotation = Quaternion.identity;
                 drivenWheel[i].GetWorldPose(out pos, out rot);
                 visualDrivenWheel[i].localRotation = Quaternion.Inverse(drivenShaft[i].rotation) * rot;
                 visualDrivenWheel[i].localPosition = pos - drivenShaft[i].position;
             }
             for (int i = 0; i < drivingWheel.Length; i++) {
+                visualDrivingShaft[i].localPosition = Vector3.zero;
+                visualDrivingShaft[i].localRotation = Quaternion.identity;
                 drivingWheel[i].GetWorldPose(out pos, out rot);
                 visualDrivingWheel[i].localRotation = Quaternion.Inverse(drivingShaft[i].rotation) * rot;
                 visualDrivingWheel[i].localPosition = pos - drivingShaft[i].position;
             }
         }
-        private void driveNetworkVisualWheel() {
 
+        private void setNetworkValue() {
+            networkEngine.position = new Vector3(
+                0,
+                wheelAngle,
+                0
+            );
+            networkWheel1.position = new Vector3(
+                visualDrivenWheel[0].localPosition.y,
+                visualDrivenWheel[1].localPosition.y,
+                visualDrivingWheel[0].localPosition.y
+            );
+            networkWheel2.position = new Vector3(
+                visualDrivingWheel[1].localPosition.y,
+                visualDrivingWheel[2].localPosition.y,
+                visualDrivingWheel[3].localPosition.y
+            );
+        }
+
+        private void getNetworkValue() {
+            float sAngle = Vector3.Angle(velocityOffset.forward, velocityOffset.forward);
+            float rotAngle = -(sAngle - 90) / 90;
+            float rotationAngle = rotAngle * velocity.magnitude / networkWheelRotationAmp;
+            for (int i = 0; i < drivenWheel.Length; i++) {
+                visualDrivenWheel[i].Rotate(rotationAngle, 0, 0);
+            }
+            for (int i = 0; i < drivingWheel.Length; i++) {
+                visualDrivingWheel[i].Rotate(rotationAngle, 0, 0);
+            }
+
+            for (int i = 0; i < visualDrivenShaft.Length; i++) {
+                visualDrivenShaft[i].localRotation = Quaternion.Euler(0, networkEngine.position.y * steeringAmp, 0);
+            }
+
+            visualDrivenShaft[0].localPosition = new Vector3(0, networkWheel1.position.x, 0);
+            visualDrivenShaft[1].localPosition = new Vector3(0, networkWheel1.position.y, 0);
+
+            visualDrivingShaft[0].localPosition = new Vector3(0, networkWheel1.position.z, 0);
+
+            visualDrivingShaft[1].localPosition = new Vector3(0, networkWheel2.position.x, 0);
+            visualDrivingShaft[2].localPosition = new Vector3(0, networkWheel2.position.y, 0);
+            visualDrivingShaft[3].localPosition = new Vector3(0, networkWheel2.position.z, 0);
+
+            steeringWheel.localRotation = Quaternion.Euler(
+                steeringWheel.localRotation.eulerAngles.x,
+                networkEngine.position.y,
+                steeringWheel.localRotation.eulerAngles.z
+            );
         }
 
         private void followBody4Driver() {
             followerTransform.SetPositionAndRotation(
                 physicsTransform.position,
                 physicsTransform.rotation
-            );
-        }
-        private void setNetworkValue() {
-            networkEngine.position = new Vector3(
-                velocity.magnitude,
-                wheelAngle * steeringAmp,
-                0
             );
         }
 
@@ -196,14 +243,12 @@ namespace UdonDrive {
             );
         }
         private void angleWheel() {
-            wheelAngle = 30;
             float angleW = wheelAngle * steeringAmp;
             foreach (WheelCollider wheel in drivenWheel) {
                 wheel.steerAngle = angleW;
             }
         }
         private void driveWheel() {
-            rightValue = 1;
             float brakeTorque = leftValue * brakeAmp;
             float inputTorque = rightValue * torqueAmp;
 

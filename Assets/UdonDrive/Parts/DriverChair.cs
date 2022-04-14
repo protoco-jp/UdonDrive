@@ -10,6 +10,8 @@ namespace UdonDrive {
         [SerializeField] UpdateCore updateCore;
         [SerializeField] GameObject physicalBody;
         [SerializeField] GameObject networkEngine;
+        [SerializeField] GameObject networkWheelL;
+        [SerializeField] GameObject networkWheelR;
 
         public override void Interact(){
             Networking.LocalPlayer.UseAttachedStation();
@@ -20,6 +22,8 @@ namespace UdonDrive {
             }
             Networking.SetOwner(Networking.LocalPlayer, physicalBody);
             Networking.SetOwner(Networking.LocalPlayer, networkEngine);
+            Networking.SetOwner(Networking.LocalPlayer, networkWheelL);
+            Networking.SetOwner(Networking.LocalPlayer, networkWheelR);
             updateCore.setDriver(true);
         }
 
