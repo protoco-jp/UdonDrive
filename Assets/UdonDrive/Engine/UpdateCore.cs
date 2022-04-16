@@ -16,7 +16,7 @@ namespace UdonDrive {
         [Range(1, 720)][SerializeField] float _steeringRewindSpeed = 180f;
         [Range(0, 1)][SerializeField] float _footBrakeRatio = 0.8f;
         [Range(1, 10)][SerializeField] float _networkBodySpeedSlope = 6;
-        [Range(1f, 5)][SerializeField] float _networkWheelRotationAmp = 1f;
+        [Range(1f, 5)][SerializeField] float _networkWheelRotationAmp = 2f;
         #endregion
 
         #region wheel transform
@@ -311,7 +311,7 @@ namespace UdonDrive {
             );
         }
         private void driveNetworkWheel() {
-            float sAngle = Vector3.Angle(_velocityReference.forward, _velocityReference.forward);
+            float sAngle = Vector3.Angle(_velocityReference.forward, _velocity);
             float rotAngle = -(sAngle - 90) / 90;
             float rotationAngle = rotAngle * _velocity.magnitude / _networkWheelRotationAmp;
             for (int i = 0; i < _drivenWheel.Length; i++) {
