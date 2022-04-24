@@ -11,8 +11,9 @@ namespace UdonDrive {
         #region parameter
         [SerializeField] float _torqueAmp = 700f;
         [SerializeField] float _brakeAmp = 1000f;
-        [SerializeField] float _steeringMax = 250f;
-        [SerializeField] float _steeringAmp = 0.3f;
+        [SerializeField] float _steeringMax = 270f;
+        [SerializeField] float _steeringAmp = 0.16f;
+        [SerializeField] float _meterMax = 270f;
         [Range(1, 720)][SerializeField] float _steeringRewindSpeed = 180f;
         [Range(0, 1)][SerializeField] float _footBrakeRatio = 0.8f;
         [Range(1, 10)][SerializeField] float _networkBodySpeedSlope = 6;
@@ -47,6 +48,13 @@ namespace UdonDrive {
         #region body
         [SerializeField] Transform _physicsTransform;
         [SerializeField] Transform _followerTransform;
+        #endregion
+
+        #region meter
+        [SerializeField] Transform _speedMeter;
+        [SerializeField] Transform _tacoMeter;
+        private float _speedMeterRotation = 0f;
+        private float _tacoMeterRotation = 0f;
         #endregion
 
         #region networking
@@ -102,6 +110,7 @@ namespace UdonDrive {
         void Update() {
             rotateSteeringWheel();
             getVelocity();
+            setMeter();
             if (_isDriver) {
                 getInput();
                 followBody4Driver();
@@ -134,6 +143,21 @@ namespace UdonDrive {
         private void getVelocity() {
             _velocity = (_velocityReference.position - _oldPos) / Time.deltaTime;
             _oldPos = _velocityReference.position;
+        }
+        private void setMeter() {
+            float v = _velocity.magnitude * 5;
+            if (v > _meterMax) {
+                v = _meterMax;
+            }
+            _speedMeterRotation = Mathf.MoveTowards(_speedMeterRotation, v, 60f * Time.deltaTime);
+            _speedMeter.localRotation = Quaternion.Euler(0, _speedMeterRotation, 0);
+
+            float tv = (v % (_meterMax / 5f)) + v * (3f / 5f);
+            if (tv > _meterMax) {
+                tv = _meterMax;
+            }
+            _tacoMeterRotation = Mathf.MoveTowards(_tacoMeterRotation, tv, 60f * Time.deltaTime);
+            _tacoMeter.localRotation = Quaternion.Euler(0, _tacoMeterRotation, 0);
         }
         #endregion
 
@@ -198,12 +222,12 @@ namespace UdonDrive {
             float steeringAngle = (leftAngle + rightAngle) / 2;
 
             _wheelAngle = _wheelAngle + steeringAngle;
-            if(_wheelAngle > _steeringMax){
+            if (_wheelAngle > _steeringMax) {
                 _wheelAngle = _steeringMax;
-            }else if(_wheelAngle < -_steeringMax){
+            } else if (_wheelAngle < -_steeringMax) {
                 _wheelAngle = -_steeringMax;
             }
-            
+
         }
         private void driveVisualWheel() {
             Vector3 pos;
@@ -250,7 +274,7 @@ namespace UdonDrive {
         private void driveWheel() { //FixedUpdate
             float brakeTorque = _leftValue * _brakeAmp;
             float inputTorque = _rightValue * _torqueAmp * (_reverse ? -1f : 1f);
-            
+
             foreach (WheelCollider wheel in _drivenWheel) {
                 wheel.brakeTorque = brakeTorque * _footBrakeRatio;
             }
@@ -258,7 +282,7 @@ namespace UdonDrive {
                 if (_sideBrake) {
                     wheel.brakeTorque = 9999f;
                     wheel.motorTorque = 0;
-                }else{
+                } else {
                     wheel.brakeTorque = brakeTorque * (1 - _footBrakeRatio);
                     wheel.motorTorque = inputTorque;
                 }
