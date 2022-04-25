@@ -48,6 +48,8 @@ namespace UdonDrive {
         #region body
         [SerializeField] Transform _physicsTransform;
         [SerializeField] Transform _followerTransform;
+        [SerializeField] Animator driveAudioAnim;
+        [SerializeField] AudioSource driveSound;
         #endregion
 
         #region meter
@@ -144,6 +146,7 @@ namespace UdonDrive {
             _velocity = (_velocityReference.position - _oldPos) / Time.deltaTime;
             _oldPos = _velocityReference.position;
         }
+
         private void setMeter() {
             float v = _velocity.magnitude * 5;
             if (v > _meterMax) {
@@ -151,6 +154,11 @@ namespace UdonDrive {
             }
             _speedMeterRotation = Mathf.MoveTowards(_speedMeterRotation, v, 60f * Time.deltaTime);
             _speedMeter.localRotation = Quaternion.Euler(0, _speedMeterRotation, 0);
+            if (v > 2f) {
+                driveAudioAnim.SetBool("IsDriving", true);
+            } else {
+                driveAudioAnim.SetBool("IsDriving", false);
+            }
 
             float tv = (v % (_meterMax / 5f)) + v * (3f / 5f);
             if (tv > _meterMax) {
@@ -158,6 +166,7 @@ namespace UdonDrive {
             }
             _tacoMeterRotation = Mathf.MoveTowards(_tacoMeterRotation, tv, 60f * Time.deltaTime);
             _tacoMeter.localRotation = Quaternion.Euler(0, _tacoMeterRotation, 0);
+            driveSound.pitch = 0.85f + (tv / (_meterMax)) + _rightValue * 0.5f;
         }
         #endregion
 
