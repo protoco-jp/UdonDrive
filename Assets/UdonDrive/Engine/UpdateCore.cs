@@ -178,12 +178,13 @@ namespace UdonDrive {
             _rightValue = Input.GetAxis("Oculus_CrossPlatform_SecondaryIndexTrigger");
         }
         private void setAirbrake() {
-            if(_airbrakeflag && _leftValue < 0.2f){
+            if (_sideBrake) { return; }
+            if (_airbrakeflag && _leftValue < 0.2f) {
                 SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, "airBrake");
                 _airbrakeflag = false;
                 return;
             }
-            if(_leftValue > 0.8f){_airbrakeflag = true;}
+            if (_leftValue > 0.8f) { _airbrakeflag = true; }
         }
         private void followBody4Driver() {
             _followerTransform.SetPositionAndRotation(
@@ -307,7 +308,7 @@ namespace UdonDrive {
                 }
             }
         }
-        public void airBrake(){
+        public void airBrake() {
             _driveAudioAnim.Play("Brake.Brake", 2, 0f);
         }
         #endregion
