@@ -6,7 +6,7 @@ using VRC.Udon;
 using VRC.Udon.Common;
 
 namespace UdonDrive {
-    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class UpdateCore : UdonSharpBehaviour {
         #region parameter
         [SerializeField] float _torqueAmp = 700f;
@@ -48,8 +48,9 @@ namespace UdonDrive {
         #region body
         [SerializeField] Transform _physicsTransform;
         [SerializeField] Transform _followerTransform;
-        [SerializeField] Animator driveAudioAnim;
-        [SerializeField] AudioSource driveSound;
+        [SerializeField] Animator _driveAudioAnim;
+        [SerializeField] AudioSource _driveSound;
+        private bool _airbrakeflag = false;
         #endregion
 
         #region meter
@@ -115,6 +116,7 @@ namespace UdonDrive {
             setMeter();
             if (_isDriver) {
                 getInput();
+                setAirbrake();
                 followBody4Driver();
                 checkGripHold();
                 setSteeringAngle();
@@ -155,9 +157,9 @@ namespace UdonDrive {
             _speedMeterRotation = Mathf.MoveTowards(_speedMeterRotation, v, 60f * Time.deltaTime);
             _speedMeter.localRotation = Quaternion.Euler(0, _speedMeterRotation, 0);
             if (v > 2f) {
-                driveAudioAnim.SetBool("IsDriving", true);
+                _driveAudioAnim.SetBool("IsDriving", true);
             } else {
-                driveAudioAnim.SetBool("IsDriving", false);
+                _driveAudioAnim.SetBool("IsDriving", false);
             }
 
             float tv = (v % (_meterMax / 5f)) + v * (3f / 5f);
@@ -166,7 +168,7 @@ namespace UdonDrive {
             }
             _tacoMeterRotation = Mathf.MoveTowards(_tacoMeterRotation, tv, 60f * Time.deltaTime);
             _tacoMeter.localRotation = Quaternion.Euler(0, _tacoMeterRotation, 0);
-            driveSound.pitch = 0.85f + (tv / (_meterMax)) + _rightValue * 0.5f;
+            _driveSound.pitch = 0.85f + (tv / (_meterMax)) + _rightValue * 0.5f;
         }
         #endregion
 
@@ -174,6 +176,14 @@ namespace UdonDrive {
         private void getInput() {
             _leftValue = Input.GetAxis("Oculus_CrossPlatform_PrimaryIndexTrigger");
             _rightValue = Input.GetAxis("Oculus_CrossPlatform_SecondaryIndexTrigger");
+        }
+        private void setAirbrake() {
+            if(_airbrakeflag && _leftValue < 0.2f){
+                SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, "airBrake");
+                _airbrakeflag = false;
+                return;
+            }
+            if(_leftValue > 0.8f){_airbrakeflag = true;}
         }
         private void followBody4Driver() {
             _followerTransform.SetPositionAndRotation(
@@ -296,6 +306,9 @@ namespace UdonDrive {
                     wheel.motorTorque = inputTorque;
                 }
             }
+        }
+        public void airBrake(){
+            _driveAudioAnim.Play("Brake.Brake", 2, 0f);
         }
         #endregion
 
