@@ -113,7 +113,7 @@ namespace UdonDrive {
         void Update() {
             rotateSteeringWheel();
             getVelocity();
-            setMeter();
+            setMeterAndSound();
             if (_isDriver) {
                 getInput();
                 setAirbrake();
@@ -149,7 +149,7 @@ namespace UdonDrive {
             _oldPos = _velocityReference.position;
         }
 
-        private void setMeter() {
+        private void setMeterAndSound() {
             float v = _velocity.magnitude * 5;
             if (v > _meterMax) {
                 v = _meterMax;
@@ -168,7 +168,8 @@ namespace UdonDrive {
             }
             _tacoMeterRotation = Mathf.MoveTowards(_tacoMeterRotation, tv, 60f * Time.deltaTime);
             _tacoMeter.localRotation = Quaternion.Euler(0, _tacoMeterRotation, 0);
-            _driveSound.pitch = 0.85f + (tv / (_meterMax)) + _rightValue * 0.5f;
+
+            _driveSound.pitch = 0.85f + (_tacoMeterRotation / (_meterMax)) + _rightValue * 0.3f;
         }
         #endregion
 
@@ -270,7 +271,7 @@ namespace UdonDrive {
         }
         private void setNetworkValue() {
             _networkEngine.position = new Vector3(
-                0,
+                _rightValue,
                 _wheelAngle,
                 0
             );
@@ -333,6 +334,7 @@ namespace UdonDrive {
             );
         }
         private void getNetworkValue() {
+            _rightValue = _networkEngine.position.x;
             _wheelAngle = _networkEngine.position.y;
 
             for (int i = 0; i < _drivenWheel.Length; i++) {
