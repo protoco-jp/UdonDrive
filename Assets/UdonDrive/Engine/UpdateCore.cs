@@ -13,7 +13,9 @@ namespace UdonDrive {
         [SerializeField] float _brakeAmp = 1000f;
         [SerializeField] float _steeringMax = 270f;
         [SerializeField] float _steeringAmp = 0.16f;
-        [SerializeField] float _meterMax = 270f;
+        [SerializeField] float _speedMax = 140f; // km/s
+        [SerializeField] float _backSpeedMax = 40f; // km/s
+        [SerializeField] float _meterMax = 180f;
         [Range(1, 720)][SerializeField] float _steeringRewindSpeed = 180f;
         [Range(0, 1)][SerializeField] float _footBrakeRatio = 0.8f;
         [Range(1, 10)][SerializeField] float _networkBodySpeedSlope = 6;
@@ -150,10 +152,11 @@ namespace UdonDrive {
         }
 
         private void setMeterAndSound() {
-            float v = _velocity.magnitude * 5;
+            float v = _velocity.magnitude * 3.6f; // m/s->km/h
             if (v > _meterMax) {
                 v = _meterMax;
             }
+            v = v * (270 / _meterMax); //km/h->rot
             _speedMeterRotation = Mathf.MoveTowards(_speedMeterRotation, v, 60f * Time.deltaTime);
             _speedMeter.localRotation = Quaternion.Euler(0, _speedMeterRotation, 0);
             if (v > 2f) {
@@ -293,8 +296,17 @@ namespace UdonDrive {
             }
         }
         private void driveWheel() { //FixedUpdate
+
             float brakeTorque = _leftValue * _brakeAmp;
             float inputTorque = _rightValue * _torqueAmp * (_reverse ? -1f : 1f);
+
+            float sAngle = Vector3.Angle(_velocityReference.forward, _velocity);
+            bool movingForward = (-(sAngle - 90)) > 0 ? true : false;
+            if (movingForward) {
+                inputTorque *= 1 - Mathf.Min(_velocity.magnitude * 3.6f, _speedMax) / _speedMax;
+            } else {
+                inputTorque *= 1 - Mathf.Min(_velocity.magnitude * 3.6f, _backSpeedMax) / _backSpeedMax;
+            }
 
             foreach (WheelCollider wheel in _drivenWheel) {
                 wheel.brakeTorque = brakeTorque * _footBrakeRatio;
