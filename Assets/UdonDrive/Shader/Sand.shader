@@ -3,7 +3,10 @@
     Properties
     {
         [KeywordEnum(NONE, TEX, IGN, WHITE)]_NOISE("Noise Pattern", Int) = 0
-        [KeywordEnum(PARAM, MUL, MASK)]_ALPHA("Alpha type", Int) = 0
+        [KeywordEnum(PARAM, MUL)]_ALPHA("Alpha type", Int) = 0
+        [Toggle] _Alpha_Only("Use texrure Alpha Only", Float) = 0
+        [Toggle] _Vert_Color("Use vertex color (color over lifetime)", Float) = 0
+
         _Density("Density", Range(0,1)) = 1
         _OffsetX("Dither Offset X", Range(0,1)) = 0
         _OffsetY("Dither Offset Y", Range(0,1)) = 0
@@ -15,7 +18,7 @@
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" "Queue"="AlphaTest" }
+        Tags { "RenderType"="Opaque" "Queue"="AlphaTest" "IgnoreProjector"="True" }
         LOD 100
 
         Pass
@@ -29,6 +32,8 @@
 
             #pragma shader_feature _NOISE_NONE _NOISE_TEX _NOISE_WHITE _NOISE_IGN
             #pragma shader_feature _ALPHA_MUL _ALPHA_MASK
+            #pragma shader_feature _ _ALPHA_ONLY_ON
+            #pragma shader_feature _ _VERT_COLOR_ON
 
             #include "UnityCG.cginc"
             #include "UnityLightingCommon.cginc"
@@ -40,6 +45,9 @@
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
+                #ifdef _VERT_COLOR_ON
+                    float4 color: COLOR;
+                #endif
             };
 
             struct v2f
@@ -49,6 +57,9 @@
                 float4 scrPos : TEXCOORD1;
                 UNITY_FOG_COORDS(2)
                 UNITY_VERTEX_OUTPUT_STEREO
+                #ifdef _VERT_COLOR_ON
+                    float4 color: COLOR;
+                #endif
             };
 
             sampler2D _BayerTex;
@@ -66,16 +77,35 @@
             v2f vert (appdata v)
             {
                 v2f o;
+
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_INITIALIZE_OUTPUT(v2f, o);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.scrPos = ComputeNonStereoScreenPos(o.vertex);
+
+                #ifdef _VERT_COLOR_ON
+                    o.color = v.color
+                #endif
+
                 UNITY_TRANSFER_FOG(o, o.vertex);
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float4 col = tex2D(_MainTex, i.uv) * _Color;
+                #ifdef _ALPHA_ONLY_ON
+                    float4 col = float4(1, 1, 1, tex2D(_MainTex, i.uv).a) * _Color;
+                #else
+                    float4 col = tex2D(_MainTex, i.uv) * _Color;
+                #endif
+
+                #ifdef _VERT_COLOR_ON
+                    col *= i.color;
+                #endif
+
                 col *= saturate(_LightColor0) * (1 - _Unlit) +  _Unlit;
 
                 #ifdef _NOISE_TEX //texture based

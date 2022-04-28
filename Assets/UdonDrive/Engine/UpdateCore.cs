@@ -16,6 +16,7 @@ namespace UdonDrive {
         [SerializeField] float _speedMax = 140f; // km/s
         [SerializeField] float _backSpeedMax = 40f; // km/s
         [SerializeField] float _meterMax = 180f;
+        [SerializeField] float _dustThreshold = 20f;
         [Range(1, 720)][SerializeField] float _steeringRewindSpeed = 180f;
         [Range(0, 1)][SerializeField] float _footBrakeRatio = 0.8f;
         [Range(1, 10)][SerializeField] float _networkBodySpeedSlope = 6;
@@ -32,6 +33,7 @@ namespace UdonDrive {
         [SerializeField] Transform[] _visualDrivingShaft;
         [SerializeField] Transform[] _visualDrivenWheel;
         [SerializeField] Transform[] _visualDrivingWheel;
+        [SerializeField] Animator _wheelDust;
         #endregion
 
         #region steering wheel
@@ -156,16 +158,16 @@ namespace UdonDrive {
             if (v > _meterMax) {
                 v = _meterMax;
             }
-            v = v * (270 / _meterMax); //km/h->rot
-            _speedMeterRotation = Mathf.MoveTowards(_speedMeterRotation, v, 60f * Time.deltaTime);
+            float sv = v * (270 / _meterMax); //km/h->rot
+            _speedMeterRotation = Mathf.MoveTowards(_speedMeterRotation, sv, 60f * Time.deltaTime);
             _speedMeter.localRotation = Quaternion.Euler(0, _speedMeterRotation, 0);
-            if (v > 2f) {
+            if (sv > 2f) {
                 _driveAudioAnim.SetBool("IsDriving", true);
             } else {
                 _driveAudioAnim.SetBool("IsDriving", false);
             }
 
-            float tv = (v % (_meterMax / 5f)) + v * (3f / 5f);
+            float tv = (sv % (_meterMax / 5f)) + sv * (3f / 5f);
             if (tv > _meterMax) {
                 tv = _meterMax;
             }
@@ -173,6 +175,13 @@ namespace UdonDrive {
             _tacoMeter.localRotation = Quaternion.Euler(0, _tacoMeterRotation, 0);
 
             _driveSound.pitch = 0.85f + (_tacoMeterRotation / (_meterMax)) + _rightValue * 0.3f;
+
+            if (v > _dustThreshold ) {
+                _wheelDust.SetFloat("Blend", v / _meterMax);
+            } else {
+                _wheelDust.SetFloat("Blend", 0);
+            }
+
         }
         #endregion
 
