@@ -40,11 +40,13 @@ namespace UdonDrive {
             if (!player.isLocal) { return; }
             Networking.SetOwner(Networking.LocalPlayer, this.gameObject);
             height = 0f;
+            RequestSerialization();
         }
         public void enter() {
             Networking.SetOwner(Networking.LocalPlayer, this.gameObject);
             height = this.transform.position.y + 0.05f //5cm浮かせる
                 - Networking.LocalPlayer.GetBonePosition(HumanBodyBones.LeftUpperLeg).y;
+            RequestSerialization();
         }
     }
 }
