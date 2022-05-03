@@ -71,6 +71,11 @@ namespace UdonDrive {
         #endregion
 
         #region api
+        private bool _isOwner = false;
+        public void setOwner(bool isOwner) {
+            _isOwner = isOwner;
+        }
+
         private bool _isDriver = false;
         public void setDriver(bool isDriver) {
             _isDriver = isDriver;
@@ -89,7 +94,6 @@ namespace UdonDrive {
         private bool _reverse = false;
         public void setReverse(bool stats) {
             _reverse = stats;
-            Debug.Log(_reverse);
         }
         public bool getReverse() {
             return _reverse;
@@ -98,7 +102,6 @@ namespace UdonDrive {
         private bool _sideBrake = true;
         public void setSideBrake(bool stats) {
             _sideBrake = stats;
-            Debug.Log(_sideBrake);
         }
         public bool getSideBrake() {
             return _sideBrake;
@@ -118,10 +121,14 @@ namespace UdonDrive {
             rotateSteeringWheel();
             getVelocity();
             setMeterAndSound();
-            if (_isDriver) {
-                getInput();
-                setAirbrake();
-                followBody4Driver();
+            if (_isOwner) {
+                if (_isDriver) {
+                    getInput();
+                    setAirbrake();
+                } else {
+                    clearInput();
+                }
+                followBody4Owner();
                 checkGripHold();
                 setSteeringAngle();
                 driveVisualWheel();
@@ -161,7 +168,7 @@ namespace UdonDrive {
             float sv = v * (270 / _meterMax); //km/h->rot
             _speedMeterRotation = Mathf.MoveTowards(_speedMeterRotation, sv, 60f * Time.deltaTime);
             _speedMeter.localRotation = Quaternion.Euler(0, _speedMeterRotation, 0);
-            if (sv > 2f) {
+            if ((sv + _rightValue * 3f) > 2f) {
                 _driveAudioAnim.SetBool("IsDriving", true);
             } else {
                 _driveAudioAnim.SetBool("IsDriving", false);
@@ -176,7 +183,7 @@ namespace UdonDrive {
 
             _driveSound.pitch = 0.85f + (_tacoMeterRotation / (_meterMax)) + _rightValue * 0.3f;
 
-            if (v > _dustThreshold ) {
+            if (v > _dustThreshold) {
                 _wheelDust.SetFloat("Blend", v / _meterMax);
             } else {
                 _wheelDust.SetFloat("Blend", 0);
@@ -190,6 +197,10 @@ namespace UdonDrive {
             _leftValue = Input.GetAxis("Oculus_CrossPlatform_PrimaryIndexTrigger");
             _rightValue = Input.GetAxis("Oculus_CrossPlatform_SecondaryIndexTrigger");
         }
+        private void clearInput() {
+            _leftValue = 0;
+            _rightValue = 0;
+        }
         private void setAirbrake() {
             if (_sideBrake) { return; }
             if (_airbrakeflag && _leftValue < 0.2f) {
@@ -199,7 +210,7 @@ namespace UdonDrive {
             }
             if (_leftValue > 0.8f) { _airbrakeflag = true; }
         }
-        private void followBody4Driver() {
+        private void followBody4Owner() {
             _followerTransform.SetPositionAndRotation(
                 _physicsTransform.position,
                 _physicsTransform.rotation

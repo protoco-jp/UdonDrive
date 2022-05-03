@@ -14,7 +14,6 @@ namespace UdonDrive {
         private float _height;
         public float height {
             set {
-                Debug.Log("toggling the object...");
                 _height = value;
                 entrypoint.localPosition = new Vector3(0, value, 0);
             }
