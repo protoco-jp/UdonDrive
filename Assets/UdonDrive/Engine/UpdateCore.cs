@@ -145,7 +145,7 @@ namespace UdonDrive {
         }
 
         void FixedUpdate() {
-            if (!_isDriver) { return; }
+            if (!_isOwner) { return; }
             angleWheel();
             driveWheel();
         }
@@ -269,13 +269,12 @@ namespace UdonDrive {
             );
             float steeringAngle = (leftAngle + rightAngle) / 2;
 
-            _wheelAngle = _wheelAngle + steeringAngle;
+            _wheelAngle = _wheelAngle + steeringAngle * 0.1f;
             if (_wheelAngle > _steeringMax) {
                 _wheelAngle = _steeringMax;
             } else if (_wheelAngle < -_steeringMax) {
                 _wheelAngle = -_steeringMax;
             }
-
         }
         private void driveVisualWheel() {
             Vector3 pos;
@@ -313,6 +312,7 @@ namespace UdonDrive {
                 _visualDrivingWheel[3].localPosition.y
             );
         }
+
         private void angleWheel() { //FixedUpdate
             float angleW = _wheelAngle * _steeringAmp;
             foreach (WheelCollider wheel in _drivenWheel) {
