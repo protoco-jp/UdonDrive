@@ -9,11 +9,11 @@ namespace UdonDrive {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class UpdateCore : UdonSharpBehaviour {
         #region parameter
-        [SerializeField] float _torqueAmp = 700f;
-        [SerializeField] float _brakeAmp = 1000f;
+        [SerializeField] float _torqueAmp = 1200f;
+        [SerializeField] float _brakeAmp = 10000f;
         [SerializeField] float _steeringMax = 270f;
         [SerializeField] float _steeringAmp = 0.16f;
-        [SerializeField] float _speedMax = 140f; // km/s
+        [SerializeField] float _speedMax = 130f; // km/s
         [SerializeField] float _backSpeedMax = 40f; // km/s
         [SerializeField] float _meterMax = 180f;
         [SerializeField] float _dustThreshold = 20f;
@@ -51,6 +51,7 @@ namespace UdonDrive {
 
         #region body
         [SerializeField] Transform _physicsTransform;
+        [SerializeField] Rigidbody _rigidBody;
         [SerializeField] Transform _followerTransform;
         [SerializeField] Animator _driveAudioAnim;
         [SerializeField] AudioSource _driveSound;
@@ -117,6 +118,9 @@ namespace UdonDrive {
         #endregion
 
         #region embedded func
+        void Start() {
+            _rigidBody.centerOfMass = new Vector3(0, 0.5f, 0);
+        }
         void Update() {
             rotateSteeringWheel();
             getVelocity();
@@ -333,7 +337,7 @@ namespace UdonDrive {
             }
             foreach (WheelCollider wheel in _drivingWheel) {
                 if (_sideBrake) {
-                    wheel.brakeTorque = 9999f;
+                    wheel.brakeTorque = 99999f;
                     wheel.motorTorque = 0;
                 } else {
                     wheel.brakeTorque = brakeTorque * (1 - _footBrakeRatio);

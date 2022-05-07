@@ -1,4 +1,4 @@
-﻿Shader "Unlit/Multiply"
+﻿Shader "Unlit/MultiplyUnlit"
 {
     Properties
     {
