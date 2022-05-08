@@ -37,7 +37,6 @@ namespace UdonDrive {
         #endregion
 
         #region steering wheel
-        [SerializeField] float _velocityAmp = 0.01f;
         [SerializeField] Transform _velocityReference;
         [SerializeField] Transform _steeringWheel;
         [SerializeField] Transform _gripLeft;
@@ -117,7 +116,7 @@ namespace UdonDrive {
         private Vector3 _oldPos = Vector3.zero;
         #endregion
 
-        #region embedded func
+        #region system func
         void Start() {
             _rigidBody.centerOfMass = new Vector3(0, 0.5f, 0);
         }
@@ -134,7 +133,6 @@ namespace UdonDrive {
                 }
                 followBody4Owner();
                 checkGripHold();
-                setSteeringAngle();
                 driveVisualWheel();
                 setNetworkValue();
             } else {
@@ -142,6 +140,10 @@ namespace UdonDrive {
                 getNetworkValue();
                 driveNetworkWheel();
             }
+        }
+
+        public override void PostLateUpdate() {
+            setSteeringAngle();
         }
 
         void FixedUpdate() {
@@ -246,15 +248,13 @@ namespace UdonDrive {
 
             if (_holdLeft) {
                 _gripLocalLeft.position =
-                    Networking.LocalPlayer.GetBonePosition(HumanBodyBones.LeftHand)
-                    + _velocity * _velocityAmp;
+                    Networking.LocalPlayer.GetBonePosition(HumanBodyBones.LeftHand);
             } else {
                 _gripLocalLeft.position = _gripDefaultLeft.position;
             }
             if (_holdRight) {
                 _gripLocalRight.position =
-                    Networking.LocalPlayer.GetBonePosition(HumanBodyBones.RightHand)
-                    + _velocity * _velocityAmp;
+                    Networking.LocalPlayer.GetBonePosition(HumanBodyBones.RightHand);
             } else {
                 _gripLocalRight.position = _gripDefaultRight.position;
             }
@@ -269,7 +269,7 @@ namespace UdonDrive {
             );
             float steeringAngle = (leftAngle + rightAngle) / 2;
 
-            _wheelAngle = _wheelAngle + steeringAngle * 0.1f;
+            _wheelAngle = _wheelAngle + steeringAngle;
             if (_wheelAngle > _steeringMax) {
                 _wheelAngle = _steeringMax;
             } else if (_wheelAngle < -_steeringMax) {
