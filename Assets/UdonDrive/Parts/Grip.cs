@@ -10,14 +10,20 @@ namespace UdonDrive {
     public class Grip : UdonSharpBehaviour {
         [SerializeField] HandType handType;
         [SerializeField] UpdateCore updateCore;
-        [SerializeField] MeshRenderer meshRenderer;
+        [SerializeField] VRC_Pickup pickup;
+        [SerializeField] MeshRenderer gripRenderer;
+
         public override void OnPickup() {
-            meshRenderer.enabled = false;
+            VRC_Pickup.PickupHand pickupHand = handType == HandType.LEFT
+                ? VRC_Pickup.PickupHand.Left : VRC_Pickup.PickupHand.Right;
+            if(pickupHand != pickup.currentHand){
+                pickup.Drop();
+                return;
+            }
             updateCore.setHold(handType, true);
-        }
-        public override void OnDrop() {
-            meshRenderer.enabled = true;
-            updateCore.setHold(handType, false);
+            gripRenderer.enabled = false;
+            pickup.pickupable = false;
+            pickup.Drop();
         }
     }
 }

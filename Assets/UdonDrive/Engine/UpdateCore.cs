@@ -45,7 +45,10 @@ namespace UdonDrive {
         [SerializeField] Transform _gripRight;
         [SerializeField] Transform _gripDefaultRight;
         [SerializeField] Transform _gripLocalRight;
-
+        [SerializeField] MeshRenderer _gripRendererL;
+        [SerializeField] VRC_Pickup _pickupL;
+        [SerializeField] MeshRenderer _gripRendererR;
+        [SerializeField] VRC_Pickup _pickupR;
         #endregion
 
         #region body
@@ -111,6 +114,8 @@ namespace UdonDrive {
         #region value keeper
         private float _leftValue = 0f;
         private float _rightValue = 0f;
+        private float _leftGrip = 0f;
+        private float _rightGrip = 0f;
         private float _wheelAngle = 0f;
         private Vector3 _velocity = Vector3.zero;
         private Vector3 _oldPos = Vector3.zero;
@@ -202,10 +207,14 @@ namespace UdonDrive {
         private void getInput() {
             _leftValue = Input.GetAxis("Oculus_CrossPlatform_PrimaryIndexTrigger");
             _rightValue = Input.GetAxis("Oculus_CrossPlatform_SecondaryIndexTrigger");
+            _leftGrip = Input.GetAxis("Oculus_CrossPlatform_PrimaryHandTrigger");
+            _rightGrip = Input.GetAxis("Oculus_CrossPlatform_SecondaryHandTrigger");
         }
         private void clearInput() {
             _leftValue = 0;
             _rightValue = 0;
+            _leftGrip = 0;
+            _rightGrip = 0;
         }
         private void setAirbrake() {
             if (_sideBrake) { return; }
@@ -223,18 +232,26 @@ namespace UdonDrive {
             );
         }
         private void checkGripHold() {
-            if (!_holdLeft) {
-                _gripLeft.SetPositionAndRotation(
-                    _gripDefaultLeft.position,
-                    _gripDefaultLeft.rotation
-                );
+            if (_leftGrip < 0.1f && _holdLeft) {
+                _holdLeft = false;
+                _gripRendererL.enabled = true;
+                _pickupL.pickupable = true;
             }
-            if (!_holdRight) {
-                _gripRight.SetPositionAndRotation(
-                    _gripDefaultRight.position,
-                    _gripDefaultRight.rotation
-                );
+            if (_rightGrip < 0.1f && _holdRight) {
+                _holdRight = false;
+                _gripRendererR.enabled = true;
+                _pickupR.pickupable = true;
             }
+
+            _gripLeft.SetPositionAndRotation(
+                _gripDefaultLeft.position,
+                _gripDefaultLeft.rotation
+            );
+
+            _gripRight.SetPositionAndRotation(
+                _gripDefaultRight.position,
+                _gripDefaultRight.rotation
+            );
         }
         private void setSteeringAngle() {
             if (!(_holdLeft || _holdRight)) {
