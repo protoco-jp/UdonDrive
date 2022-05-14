@@ -10,8 +10,9 @@ namespace UdonDrive {
         [SerializeField] AudioSource audioSource;
         [SerializeField] AudioClip clip;
         [SerializeField] Transform bar; 
-
+        [HideInInspector] public bool lockFlg = false;
         public override void Interact() {
+            if (lockFlg) { return; }
             if (!updateCore.getReverse()) {
                 SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, "reverse");
             } else {

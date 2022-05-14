@@ -20,13 +20,5 @@ namespace UdonDrive {
         void Start() {
             currentRespawn = respawnPoints[0];
         }
-        void Update() {
-            foreach (Transform point in respawnPoints) {
-                if (Vector3.Distance(this.transform.position, point.position) < refreshRange) {
-                    currentRespawn = point;
-                    break;
-                }
-            }
-        }
     }
 }

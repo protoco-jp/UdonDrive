@@ -12,13 +12,16 @@ namespace UdonDrive {
         [SerializeField] UpdateCore updateCore;
         [SerializeField] VRC_Pickup pickup;
         [SerializeField] MeshRenderer gripRenderer;
-
+        [SerializeField] Reverse _reverseMgr;
         public override void OnPickup() {
             VRC_Pickup.PickupHand pickupHand = handType == HandType.LEFT
                 ? VRC_Pickup.PickupHand.Left : VRC_Pickup.PickupHand.Right;
             if(pickupHand != pickup.currentHand){
                 pickup.Drop();
                 return;
+            }
+            if(pickupHand == VRC_Pickup.PickupHand.Left){
+                _reverseMgr.lockFlg = true;
             }
             updateCore.setHold(handType, true);
             gripRenderer.enabled = false;

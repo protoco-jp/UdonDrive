@@ -78,7 +78,9 @@
 
             fixed4 albedo = (texR * msk.r + texG * msk.g + texB * msk.b) / (msk.r + msk.g + msk.b);
             albedo = float4(texA.rgb, 1) * texA.a + albedo * (1 - texA.a);
-            albedo *= u2  * _MulStr + (1 - _MulStr);
+
+            float gray = dot(u2.rgb, fixed3(0.299, 0.587, 0.114));
+            albedo *= fixed4(gray, gray, gray, 1)  * _MulStr + (1 - _MulStr);
             albedo *= _Color;
             fixed3 normal = (normalR * msk.r + normalG * msk.g + normalB * msk.b) / (msk.r + msk.g + msk.b);
 

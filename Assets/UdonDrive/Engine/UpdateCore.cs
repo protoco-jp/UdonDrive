@@ -49,6 +49,7 @@ namespace UdonDrive {
         [SerializeField] VRC_Pickup _pickupL;
         [SerializeField] MeshRenderer _gripRendererR;
         [SerializeField] VRC_Pickup _pickupR;
+        [SerializeField] Reverse _reverseMgr;
         #endregion
 
         #region body
@@ -236,6 +237,7 @@ namespace UdonDrive {
                 _holdLeft = false;
                 _gripRendererL.enabled = true;
                 _pickupL.pickupable = true;
+                _reverseMgr.lockFlg = false;
             }
             if (_rightGrip < 0.1f && _holdRight) {
                 _holdRight = false;
